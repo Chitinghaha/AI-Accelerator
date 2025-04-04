@@ -5,7 +5,9 @@ import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
 object OutputSel extends ChiselEnum {
-  val ADDSUB, MUL, REG = Value
+  // add for QNT op 
+  val ADDSUB, MUL, QNT ,REG = Value
+
 }
 
 class CfuInPayload extends Bundle {
@@ -29,6 +31,9 @@ class SIMDEngine extends Module {
   val addSubActivationUnit = Module(new AddSubActivationUnit())
   val mulUnit              = Module(new MulUnit())
   val register             = Module(new Register())
+  // add for QNTop 
+  val qntUnit              = Module(new QntUnit())
+
 
   controller.io.cmd_payload <> io.cmd_payload
   controller.io.rsp_payload <> io.rsp_payload
@@ -40,6 +45,12 @@ class SIMDEngine extends Module {
   mulUnit.io.opSel              := controller.io.mulOpSel
   mulUnit.io.rs1                := io.cmd_payload.bits.rs1.asUInt
   mulUnit.io.rs2                := io.cmd_payload.bits.rs2.asUInt
+
+  // add for QNTop 
+  qntUnit.io.opSel              := controller.io.qntOpSel
+  qntUnit.io.rs1                := io.cmd_payload.bits.rs1.asUInt
+  qntUnit.io.rs2                := io.cmd_payload.bits.rs2.asUInt
+
   register.io.rs1               := io.cmd_payload.bits.rs1.asUInt
   register.io.rs2               := io.cmd_payload.bits.rs2.asUInt
   register.io.rdMsbIn           := mulUnit.io.rdMsb
@@ -52,7 +63,10 @@ class SIMDEngine extends Module {
     Seq(
       OutputSel.ADDSUB.asUInt -> addSubActivationUnit.io.rd.asSInt,
       OutputSel.MUL.asUInt    -> mulUnit.io.rd.asSInt,
-      OutputSel.REG.asUInt    -> register.io.rdMsbOut.asSInt
+      OutputSel.REG.asUInt    -> register.io.rdMsbOut.asSInt,
+      // add for QNTop 
+      OutputSel.QNT.asUInt    -> qntUnit.io.rd.asSInt
+
     )
   )
 }

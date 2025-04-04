@@ -5,10 +5,11 @@ import chisel3.util._
 import chisel3.experimental.ChiselEnum
 
 object AddSubActivationOp extends ChiselEnum {
-  val NONE                       = Value
-  val ADDI8I8S_VV, ADDI16I16S_VV = Value
-  val SUBI8I8S_VV, SUBI16I16S_VV = Value
+  val NONE = Value
+  val ADDI8I8S_VV, ADDI16I16S_VV, ADDI8I8S_VX, ADDI16I16S_VX = Value
+  val SUBI8I8S_VV, SUBI16I16S_VV, SUBI8I8S_VX, SUBI16I16S_VX = Value
 }
+
 
 class AddSubActivationUnit extends Module {
   val io = IO(new Bundle {
@@ -22,6 +23,7 @@ class AddSubActivationUnit extends Module {
   val rs2ByteArray = Wire(Vec(4, UInt(8.W)))
   val rdByteArray  = Wire(Vec(4, UInt(8.W)))
   val rdByteConcat = Wire(UInt(32.W))
+
   val rs1HalfArray = Wire(Vec(2, UInt(16.W)))
   val rs2HalfArray = Wire(Vec(2, UInt(16.W)))
   val rdHalfArray  = Wire(Vec(2, UInt(16.W)))
@@ -37,7 +39,9 @@ class AddSubActivationUnit extends Module {
       DontCare,
       Seq(
         AddSubActivationOp.ADDI8I8S_VV.asUInt -> (rs1ByteArray(i).asSInt + rs2ByteArray(i).asSInt).asUInt,
-        AddSubActivationOp.SUBI8I8S_VV.asUInt -> (rs1ByteArray(i).asSInt - rs2ByteArray(i).asSInt).asUInt
+        AddSubActivationOp.SUBI8I8S_VV.asUInt -> (rs1ByteArray(i).asSInt - rs2ByteArray(i).asSInt).asUInt,
+        AddSubActivationOp.ADDI8I8S_VX.asUInt -> (rs1ByteArray(i).asSInt + io.rs2(7, 0).asSInt).asUInt,
+        AddSubActivationOp.SUBI8I8S_VX.asUInt -> (rs1ByteArray(i).asSInt - io.rs2(7, 0).asSInt).asUInt
       )
     )
   }
@@ -52,7 +56,10 @@ class AddSubActivationUnit extends Module {
       DontCare,
       Seq(
         AddSubActivationOp.ADDI16I16S_VV.asUInt -> (rs1HalfArray(i).asSInt + rs2HalfArray(i).asSInt).asUInt,
-        AddSubActivationOp.SUBI16I16S_VV.asUInt -> (rs1HalfArray(i).asSInt - rs2HalfArray(i).asSInt).asUInt
+        AddSubActivationOp.SUBI16I16S_VV.asUInt -> (rs1HalfArray(i).asSInt - rs2HalfArray(i).asSInt).asUInt,
+        AddSubActivationOp.ADDI16I16S_VX.asUInt -> (rs1HalfArray(i).asSInt + io.rs2(15, 0).asSInt).asUInt,
+        AddSubActivationOp.SUBI16I16S_VX.asUInt -> (rs1HalfArray(i).asSInt - io.rs2(15, 0).asSInt).asUInt
+        
       )
     )
   }
@@ -62,15 +69,20 @@ class AddSubActivationUnit extends Module {
 
   when(io.opSel.isOneOf(
     AddSubActivationOp.ADDI8I8S_VV,
-    AddSubActivationOp.SUBI8I8S_VV
+    AddSubActivationOp.SUBI8I8S_VV,
+    AddSubActivationOp.ADDI8I8S_VX,
+    AddSubActivationOp.SUBI8I8S_VX
   )) {
     io.rd := rdByteConcat
   }.elsewhen(io.opSel.isOneOf(
     AddSubActivationOp.ADDI16I16S_VV,
-    AddSubActivationOp.SUBI16I16S_VV
+    AddSubActivationOp.SUBI16I16S_VV,
+    AddSubActivationOp.ADDI16I16S_VX,
+    AddSubActivationOp.SUBI16I16S_VX
   )) {
     io.rd := rdHalfConcat
   }.otherwise {
     io.rd := DontCare
   }
+
 }
