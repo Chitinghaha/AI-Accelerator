@@ -23,6 +23,7 @@ public:
 protected:
 	convInfo*   info;
 	quantiInfo* qInfo;
+	static int16_t Buffer[55000];
 };
 
 }  // namespace scalar
